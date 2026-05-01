@@ -4,391 +4,810 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Booze Wheel</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='15' fill='%230c0b09'/%3E%3Cpath d='M16 1 L27.5 8.5 L16 16 Z' fill='%23c0392b'/%3E%3Cpath d='M27.5 8.5 L27.5 23.5 L16 16 Z' fill='%23d68910'/%3E%3Cpath d='M27.5 23.5 L16 31 L16 16 Z' fill='%231a7a4a'/%3E%3Cpath d='M16 31 L4.5 23.5 L16 16 Z' fill='%232471a3'/%3E%3Cpath d='M4.5 23.5 L4.5 8.5 L16 16 Z' fill='%237d3c98'/%3E%3Cpath d='M4.5 8.5 L16 1 L16 16 Z' fill='%23ca6f1e'/%3E%3Ccircle cx='16' cy='16' r='4.5' fill='%230c0b09'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23e8512a'/%3E%3Cpolygon points='31,13.5 31,18.5 26.5,16' fill='%23e8512a'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-
 :root{
-  --bg:#0c0b09;
-  --s1:#131210;
-  --s2:#1a1815;
-  --line:rgba(255,255,255,0.07);
-  --text:#e2d9cc;
-  --muted:#7a6f64;
-  --dim:#4a4238;
-  --acc:#e8512a;
+  --bg:#0c0b09;--s1:#131210;--s2:#1a1815;--s3:#201e1a;
+  --line:rgba(255,255,255,0.07);--line2:rgba(255,255,255,0.13);
+  --text:#e2d9cc;--muted:#7a6f64;--dim:#4a4238;
+  --acc:#e8512a;--acc-l:rgba(232,81,42,0.13);--acc-b:rgba(232,81,42,0.5);
 }
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;-webkit-font-smoothing:antialiased}
 
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Outfit',sans-serif;font-weight:400;-webkit-font-smoothing:antialiased}
+.shell{display:grid;grid-template-columns:1fr 340px;min-height:100vh}
 
-.shell{display:grid;grid-template-columns:1fr 320px;min-height:100vh}
-
-/* ─── LEFT ────────────────────────── */
-.left{
-  display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:28px;padding:48px 40px;
-  border-right:1px solid var(--line);
-}
-
-.wordmark{
-  font-family:'Anton',sans-serif;font-size:12px;
-  letter-spacing:6px;color:var(--muted);
-  text-transform:uppercase;align-self:flex-start;
-}
+/* left */
+.left{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:36px 40px;border-right:1px solid var(--line)}
+.wordmark{align-self:flex-start;line-height:1;user-select:none;cursor:pointer}
 
 /* wheel */
 .wheel-zone{position:relative;display:flex;align-items:center;justify-content:center}
-canvas#c{display:block;border-radius:50%}
-
-/* pointer – sits on the RIGHT edge, pointing left into the wheel */
-.pin{
-  position:absolute;right:-2px;top:50%;
-  transform:translateY(-50%);
-  display:flex;align-items:center;z-index:2;
-}
+canvas#c{display:block;border-radius:50%;touch-action:none}
+.pin{position:absolute;right:-2px;top:50%;transform:translateY(-50%);display:flex;align-items:center;z-index:2;pointer-events:none}
 .pin-bar{width:10px;height:3px;background:var(--acc)}
-.pin-tri{
-  width:0;height:0;
-  border-top:12px solid transparent;
-  border-bottom:12px solid transparent;
-  border-right:28px solid var(--acc);
-}
+.pin-tri{width:0;height:0;border-top:12px solid transparent;border-bottom:12px solid transparent;border-right:28px solid var(--acc)}
 
 /* result */
-.result-strip{
-  height:64px;display:flex;align-items:center;
-  justify-content:center;text-align:center;
-}
-#idleMsg{font-size:13px;color:var(--muted);letter-spacing:1px}
-#resultName{
-  font-family:'Anton',sans-serif;font-size:48px;
-  letter-spacing:1px;line-height:1;color:var(--text);
-  opacity:0;transform:translateY(6px);
-  transition:opacity .3s ease,transform .3s ease;
-  display:none;
-}
+.result-strip{height:56px;display:flex;align-items:center;justify-content:center;text-align:center;width:100%}
+#idleMsg{font-size:13px;color:var(--muted);letter-spacing:.3px}
+#resultName{font-family:'Anton',sans-serif;font-size:44px;letter-spacing:1px;line-height:1;color:var(--text);opacity:0;transform:translateY(5px);transition:opacity .28s,transform .28s;display:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #resultName.show{opacity:1;transform:translateY(0)}
 
-/* button */
-.spin-wrap{display:flex;flex-direction:column;align-items:center;gap:10px}
-.spin-btn{
-  font-family:'Anton',sans-serif;font-size:20px;letter-spacing:4px;
-  background:var(--acc);color:#fff;border:none;cursor:pointer;
-  padding:14px 56px;
-  clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
-  transition:background .12s,transform .08s;
-  user-select:none;
-}
-.spin-btn:hover:not(:disabled){background:#f0622f}
-.spin-btn:active:not(:disabled){transform:scale(0.97)}
+/* spin zone */
+.spin-zone{display:flex;flex-direction:column;align-items:center;gap:6px}
+.spin-btn-wrap{position:relative}
+.spin-btn{font-family:'Anton',sans-serif;font-size:20px;letter-spacing:4px;background:var(--acc);color:#fff;border:none;cursor:pointer;padding:14px 56px;display:block;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);user-select:none}
 .spin-btn:disabled{background:var(--dim);cursor:not-allowed}
+.spin-btn-wrap.charging-high{animation:shake .06s infinite}
+@keyframes shake{0%,100%{transform:translateX(0)}33%{transform:translateX(-2px)}66%{transform:translateX(2px)}}
+.power-bar-wrap{width:200px;display:flex;flex-direction:column;align-items:stretch;gap:4px}
+.power-track{width:100%;height:2px;background:rgba(255,255,255,0.06);border-radius:1px;overflow:hidden}
+.power-fill{height:100%;width:0%;border-radius:1px}
+.power-text{font-size:10px;letter-spacing:2px;color:var(--dim);text-align:center;height:14px}
 #spinCount{font-size:11px;color:var(--dim);letter-spacing:1.5px}
+.drag-note{font-size:11px;color:var(--dim);letter-spacing:.2px;margin-top:-2px}
 
-/* ─── RIGHT ───────────────────────── */
-.right{display:flex;flex-direction:column;background:var(--s1)}
+/* right */
+.right{display:flex;flex-direction:column;background:var(--s1);overflow:hidden}
+.tab-bar{display:flex;border-bottom:1px solid var(--line);flex-shrink:0}
+.tab-btn{flex:1;font-family:'Outfit',sans-serif;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;font-weight:500;background:transparent;color:var(--muted);border:none;padding:15px 8px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .1s,border-color .1s}
+.tab-btn:hover{color:var(--text)}.tab-btn.active{color:var(--text);border-bottom-color:var(--acc)}
+.tab-body{display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0}
+.tab-body.active{display:flex}
 
-.panel-head{
-  padding:28px 24px 20px;border-bottom:1px solid var(--line);
-}
-.panel-head h2{
-  font-family:'Anton',sans-serif;font-size:14px;
-  letter-spacing:4px;color:var(--muted);font-weight:400;
-}
-
-.add-row{
-  display:flex;flex-direction:column;gap:7px;
-  padding:14px 24px 16px;border-bottom:1px solid var(--line);
-}
-.add-row input{
-  background:var(--s2);border:1px solid var(--line);border-radius:3px;
-  padding:9px 12px;color:var(--text);
-  font-family:'Outfit',sans-serif;font-size:14px;
-  outline:none;transition:border-color .12s;
-}
-.add-row input::placeholder{color:var(--dim)}
-.add-row input:focus{border-color:rgba(232,81,42,0.45)}
-.add-row button{
-  background:transparent;border:1px solid var(--line);color:var(--muted);
-  border-radius:3px;padding:8px 12px;font-family:'Outfit',sans-serif;
-  font-size:13px;cursor:pointer;transition:color .12s,border-color .12s;
-  text-align:left;
-}
+/* drinks tab */
+.add-row{display:flex;flex-direction:column;gap:7px;padding:13px 20px 14px;border-bottom:1px solid var(--line);flex-shrink:0}
+.add-row input{background:var(--s2);border:1px solid var(--line);border-radius:3px;padding:9px 11px;color:var(--text);font-family:'Outfit',sans-serif;font-size:14px;outline:none;transition:border-color .1s}
+.add-row input::placeholder{color:var(--dim)}.add-row input:focus{border-color:var(--acc-b)}
+.add-row button{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:3px;padding:8px 11px;font-family:'Outfit',sans-serif;font-size:13px;cursor:pointer;transition:color .1s,border-color .1s;text-align:left}
 .add-row button:hover{color:var(--acc);border-color:rgba(232,81,42,0.3)}
-
-.list{
-  flex:1;overflow-y:auto;padding:0;
-  scrollbar-width:thin;scrollbar-color:var(--s2) transparent;
-}
-.item{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 24px;border-bottom:1px solid var(--line);
-  transition:background .1s;
-}
+.list{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--s2) transparent}
+.item{display:flex;align-items:center;gap:9px;padding:10px 20px;border-bottom:1px solid var(--line);transition:background .1s}
 .item:hover{background:var(--s2)}
-.dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.item-name{
-  flex:1;font-size:13px;white-space:nowrap;
-  overflow:hidden;text-overflow:ellipsis;color:var(--text);
-}
-.rm{
-  background:none;border:none;color:var(--dim);
-  cursor:pointer;font-size:18px;line-height:1;
-  padding:0 2px;transition:color .1s;flex-shrink:0;
-}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.item-name{flex:1;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.rm{background:none;border:none;color:var(--dim);cursor:pointer;font-size:18px;line-height:1;padding:0 2px;transition:color .1s;flex-shrink:0}
 .rm:hover{color:var(--acc)}
-.empty-state{
-  padding:40px 24px;color:var(--muted);
-  font-size:13px;text-align:center;line-height:1.6;
-}
+.empty-state{padding:36px 20px;color:var(--muted);font-size:13px;text-align:center;line-height:1.7}
+.hist{padding:12px 20px 16px;border-top:1px solid var(--line);flex-shrink:0}
+.sect-lbl{font-size:10px;letter-spacing:2.5px;color:var(--dim);text-transform:uppercase;margin-bottom:8px}
+.hrow{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:7px;padding:2px 0}
+.hrow::before{content:'';width:3px;height:3px;border-radius:50%;background:var(--dim);flex-shrink:0}
+.hrow.top{color:var(--acc)}.hrow.top::before{background:var(--acc)}
 
-.hist{padding:14px 24px 20px;border-top:1px solid var(--line)}
-.hist-label{
-  font-size:10px;letter-spacing:2.5px;color:var(--dim);
-  text-transform:uppercase;margin-bottom:10px;
+/* physics tab */
+.phys-scroll{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--s2) transparent;padding:18px 20px 24px}
+.info-box{background:var(--s2);border:1px solid var(--line);border-radius:4px;padding:14px;font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:20px}
+.info-box strong{color:var(--text);font-weight:500}
+.slider-block{display:flex;flex-direction:column;gap:16px;margin-bottom:20px}
+.sl-row{display:flex;flex-direction:column;gap:5px}
+.sl-head{display:flex;justify-content:space-between;align-items:baseline}
+.sl-name{font-size:13px;color:var(--text);font-weight:500}
+.sl-val{font-family:'Anton',sans-serif;font-size:14px;color:var(--acc)}
+.sl-desc{font-size:11px;color:var(--dim)}
+input[type=range]{width:100%;height:3px;-webkit-appearance:none;appearance:none;background:var(--s3);border-radius:2px;outline:none;cursor:pointer;margin-top:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--acc);cursor:pointer;border:2px solid var(--s1);transition:transform .1s}
+input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.2)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:2px solid var(--s1);border-radius:50%;background:var(--acc);cursor:pointer}
+.reset-btn{width:100%;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:3px;padding:8px;font-family:'Outfit',sans-serif;font-size:12px;cursor:pointer;transition:all .1s}
+.reset-btn:hover{color:var(--text);border-color:var(--line2)}
+.divider{border:none;border-top:1px solid var(--line);margin:18px 0}
+.drag-info-txt{font-size:12px;color:var(--muted);line-height:1.6}
+.drag-info-txt strong{color:var(--text);font-weight:500}
+
+/* presets tab */
+.presets-body{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.save-section{padding:14px 20px;border-bottom:1px solid var(--line);flex-shrink:0}
+.save-section .sect-lbl{margin-bottom:9px}
+.save-row{display:flex;gap:6px}
+.save-row input{flex:1;background:var(--s2);border:1px solid var(--line);border-radius:3px;padding:9px 10px;color:var(--text);font-family:'Outfit',sans-serif;font-size:13px;outline:none;transition:border-color .1s;min-width:0}
+.save-row input::placeholder{color:var(--dim)}.save-row input:focus{border-color:var(--acc-b)}
+.save-btn{background:var(--acc);border:none;color:#fff;border-radius:3px;padding:9px 14px;font-family:'Outfit',sans-serif;font-size:13px;cursor:pointer;white-space:nowrap;transition:background .1s;flex-shrink:0}
+.save-btn:hover{background:#f0622f}
+.preset-scroll{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--s2) transparent}
+.preset-sect-lbl{font-size:10px;letter-spacing:2.5px;color:var(--dim);text-transform:uppercase;padding:12px 20px 5px}
+.p-item{display:flex;align-items:center;gap:9px;padding:10px 20px;border-bottom:1px solid var(--line);transition:background .1s}
+.p-item:hover{background:var(--s2)}
+.p-info{flex:1;min-width:0}
+.p-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.p-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.p-acts{display:flex;gap:5px;flex-shrink:0;align-items:center}
+.p-load{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:2px;padding:5px 9px;font-size:11px;cursor:pointer;transition:all .1s;font-family:'Outfit',sans-serif}
+.p-load:hover{color:var(--acc);border-color:var(--acc-b)}
+.p-del{background:transparent;border:none;color:var(--dim);font-size:17px;line-height:1;cursor:pointer;padding:2px 4px;transition:color .1s}
+.p-del:hover{color:var(--acc)}
+
+/* physics mode indicator */
+#physBadge{
+  position:fixed;bottom:14px;right:16px;
+  font-size:10px;letter-spacing:1.8px;text-transform:uppercase;
+  color:var(--acc);opacity:0;pointer-events:none;
+  transition:opacity .3s;z-index:9999;
 }
-.hist-list{display:flex;flex-direction:column;gap:5px}
-.hrow{
-  font-size:13px;color:var(--muted);
-  display:flex;align-items:center;gap:8px;
-}
-.hrow::before{
-  content:'';width:3px;height:3px;border-radius:50%;
-  background:var(--dim);flex-shrink:0;
-}
-.hrow.top{color:var(--acc)}
-.hrow.top::before{background:var(--acc)}
+#physBadge.on{opacity:.55}
+
+/* physics active — elements in physics mode get grab cursor */
+.phys-el{cursor:grab!important}
+.phys-el.phys-dragging{cursor:grabbing!important}
 
 @media(max-width:740px){
-  .shell{grid-template-columns:1fr;min-height:auto}
-  .left{padding:32px 20px;border-right:none;border-bottom:1px solid var(--line)}
+  .shell{grid-template-columns:1fr}
+  .left{padding:28px 20px;border-right:none;border-bottom:1px solid var(--line)}
   canvas#c{width:280px!important;height:280px!important}
-  #resultName{font-size:36px}
+  #resultName{font-size:34px}
 }
 </style>
 </head>
 <body>
+
+<div id="physBadge">Physics On · ×5 logo to exit</div>
+
 <div class="shell">
-
   <div class="left">
-    <div class="wordmark">Booze Wheel</div>
 
-    <div class="wheel-zone">
+    <div class="wordmark" id="logo">
+      <svg width="172" height="36" viewBox="0 0 172 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(18,18)">
+          <path d="M0,-15 L12.99,-7.5 L0,0 Z" fill="#c0392b"/>
+          <path d="M12.99,-7.5 L12.99,7.5 L0,0 Z" fill="#d68910"/>
+          <path d="M12.99,7.5 L0,15 L0,0 Z" fill="#1a7a4a"/>
+          <path d="M0,15 L-12.99,7.5 L0,0 Z" fill="#2471a3"/>
+          <path d="M-12.99,7.5 L-12.99,-7.5 L0,0 Z" fill="#7d3c98"/>
+          <path d="M-12.99,-7.5 L0,-15 L0,0 Z" fill="#ca6f1e"/>
+          <line x1="0" y1="-15" x2="0" y2="0" stroke="rgba(0,0,0,0.5)" stroke-width="1"/>
+          <line x1="12.99" y1="-7.5" x2="0" y2="0" stroke="rgba(0,0,0,0.5)" stroke-width="1"/>
+          <line x1="12.99" y1="7.5" x2="0" y2="0" stroke="rgba(0,0,0,0.5)" stroke-width="1"/>
+          <line x1="0" y1="15" x2="0" y2="0" stroke="rgba(0,0,0,0.5)" stroke-width="1"/>
+          <line x1="-12.99" y1="7.5" x2="0" y2="0" stroke="rgba(0,0,0,0.5)" stroke-width="1"/>
+          <line x1="-12.99" y1="-7.5" x2="0" y2="0" stroke="rgba(0,0,0,0.5)" stroke-width="1"/>
+          <circle cx="0" cy="0" r="15" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+          <circle cx="0" cy="0" r="4" fill="#0c0b09"/>
+          <circle cx="0" cy="0" r="2" fill="#e8512a"/>
+          <polygon points="19,0 15,-3.5 15,3.5" fill="#e8512a"/>
+        </g>
+        <text x="40" y="13" font-family="Anton,sans-serif" font-size="13" fill="#e2d9cc" letter-spacing="3">BOOZE</text>
+        <text x="40" y="29" font-family="Anton,sans-serif" font-size="13" fill="#e8512a" letter-spacing="3">WHEEL</text>
+      </svg>
+    </div>
+
+    <div class="wheel-zone" id="wheelZone">
       <canvas id="c" width="420" height="420"></canvas>
       <div class="pin"><div class="pin-bar"></div><div class="pin-tri"></div></div>
     </div>
 
-    <div class="result-strip">
-      <div id="idleMsg">Give it a spin.</div>
+    <div class="result-strip" id="resultStrip">
+      <div id="idleMsg">Press and hold to spin.</div>
       <div id="resultName"></div>
     </div>
 
-    <div class="spin-wrap">
-      <button class="spin-btn" id="spinBtn">SPIN</button>
+    <div class="spin-zone" id="spinZone">
+      <div class="spin-btn-wrap" id="spinWrap">
+        <button class="spin-btn" id="spinBtn">HOLD TO SPIN</button>
+      </div>
+      <div class="power-bar-wrap">
+        <div class="power-track"><div class="power-fill" id="powerFill"></div></div>
+        <div class="power-text" id="powerText"></div>
+      </div>
       <div id="spinCount">0 SPINS</div>
+      <div class="drag-note">or drag the wheel directly</div>
     </div>
+
   </div>
 
-  <div class="right">
-    <div class="panel-head"><h2>YOUR DRINKS</h2></div>
-
-    <div class="add-row">
-      <input type="text" id="inp" placeholder="Drink name..." maxlength="36">
-      <button id="addBtn">+ Add to wheel</button>
+  <div class="right" id="rightPanel">
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="drinks">Drinks</button>
+      <button class="tab-btn" data-tab="physics">Physics</button>
+      <button class="tab-btn" data-tab="presets">Presets</button>
     </div>
 
-    <div class="list" id="list"></div>
+    <div class="tab-body active" id="tb-drinks">
+      <div class="add-row">
+        <input type="text" id="drinkInp" placeholder="Drink name..." maxlength="36">
+        <button id="addBtn">+ Add to wheel</button>
+      </div>
+      <div class="list" id="drinkList"></div>
+      <div class="hist" id="histWrap" style="display:none">
+        <div class="sect-lbl">Last spins</div>
+        <div id="histList"></div>
+      </div>
+    </div>
 
-    <div class="hist" id="histWrap" style="display:none">
-      <div class="hist-label">History</div>
-      <div class="hist-list" id="histList"></div>
+    <div class="tab-body" id="tb-physics">
+      <div class="phys-scroll">
+        <div class="info-box">
+          <strong>Hold to charge.</strong> Press and hold SPIN — the longer you hold, the harder the throw. Release to launch.<br><br>
+          Short tap = light flick. Full charge = max power.
+        </div>
+        <div class="sect-lbl" style="margin-bottom:12px">Wheel physics</div>
+        <div class="slider-block">
+          <div class="sl-row">
+            <div class="sl-head"><span class="sl-name">Friction</span><span class="sl-val" id="fricVal">40</span></div>
+            <div class="sl-desc">Deceleration rate</div>
+            <input type="range" min="1" max="100" value="40" id="fricSlider" step="1">
+          </div>
+          <div class="sl-row">
+            <div class="sl-head"><span class="sl-name">Wobble</span><span class="sl-val" id="wobVal">25</span></div>
+            <div class="sl-desc">Oscillation as it settles</div>
+            <input type="range" min="0" max="100" value="25" id="wobSlider" step="1">
+          </div>
+        </div>
+        <button class="reset-btn" id="resetPhysBtn">↺ Reset to defaults</button>
+        <hr class="divider">
+        <div class="drag-info-txt">
+          <strong>Drag the wheel</strong> to throw it manually. Release speed sets velocity.
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-body" id="tb-presets">
+      <div class="presets-body">
+        <div class="save-section">
+          <div class="sect-lbl">Save current drinks</div>
+          <div class="save-row">
+            <input type="text" id="presetNameInp" placeholder="Preset name..." maxlength="30">
+            <button class="save-btn" id="savePresetBtn">Save</button>
+          </div>
+        </div>
+        <div class="preset-scroll" id="presetScroll"></div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
+// ─── constants ──────────────────────────────────────────
 const PAL = [
   '#c0392b','#d68910','#1a7a4a','#2471a3',
   '#7d3c98','#ca6f1e','#1abc9c','#922b21',
   '#1f618d','#b7950b','#117a65','#6c3483',
   '#e67e22','#2e86c1','#8e44ad','#28b463',
 ];
-
-let drinks = [
-  'Modelo Watermelon','Modelo Pineapple',
-  'Four Loko Jungle Juice','Bud Light',
-  'White Claw Mango','Corona Extra',
+const BUILTIN = [
+  {id:'b1',name:'Beer Night',  drinks:['Bud Light','Corona Extra','Modelo Especial','Heineken','Blue Moon','Stella Artois']},
+  {id:'b2',name:'Shots Night', drinks:['Tequila Shot','Vodka Shot','Fireball','Jager Bomb','Whiskey Shot','Rum Shot']},
+  {id:'b3',name:'Claws & Cans',drinks:['White Claw Mango','White Claw Lime','Truly Lemonade','Four Loko','Twisted Tea','Vizzy']},
+  {id:'b4',name:'Modelo Run',  drinks:['Modelo Watermelon','Modelo Pineapple','Modelo Especial','Modelo Negra','Modelo Chelada']},
 ];
-let spins   = 0;
-let history = [];
-let angle   = 0;
-let spinning = false;
-
-const canvas = document.getElementById('c');
-const ctx    = canvas.getContext('2d');
-const CX = canvas.width / 2, CY = canvas.height / 2, R = CX - 6;
+const STORE_KEY = 'bw_presets';
 const TAU = Math.PI * 2;
+const MAX_HOLD_MS = 2800;
 
-// ── Draw ─────────────────────────────────
+// ─── app state ──────────────────────────────────────────
+let drinks = ['Modelo Watermelon','Modelo Pineapple','Four Loko Jungle Juice','Bud Light','White Claw Mango','Corona Extra'];
+let angle = 0, omega = 0, spinning = false, spins = 0;
+let history = [];
+let wheelRafId = null, lockedFric = 1.5, lockedWob = 0.5;
+let holding = false, holdStart = null, holdRafId = null, autoTimer = null;
+let wheelDragging = false, lastDragAng = 0, lastDragTime = 0;
+const dragVelBuf = [];
+
+// ─── elements ───────────────────────────────────────────
+const canvas    = document.getElementById('c');
+const ctx       = canvas.getContext('2d');
+const CX = canvas.width/2, CY = canvas.height/2, R = CX - 6;
+const spinBtn   = document.getElementById('spinBtn');
+const spinWrap  = document.getElementById('spinWrap');
+const powerFill = document.getElementById('powerFill');
+const powerText = document.getElementById('powerText');
+const idleMsg   = document.getElementById('idleMsg');
+const resultName= document.getElementById('resultName');
+const fricSlider= document.getElementById('fricSlider');
+const wobSlider = document.getElementById('wobSlider');
+
+const FRIC = { s2p: v => 0.2 + (v/100)*4.8 };
+const WOB  = { s2p: v => (v/100)*2.0 };
+
+// ─── draw ───────────────────────────────────────────────
 function draw(a) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const n = drinks.length;
   if (!n) {
-    ctx.fillStyle = 'rgba(255,255,255,0.04)';
+    ctx.fillStyle='rgba(255,255,255,0.04)';
     ctx.beginPath(); ctx.arc(CX,CY,R,0,TAU); ctx.fill();
-    ctx.fillStyle='rgba(255,255,255,0.18)';
-    ctx.font='400 14px Outfit'; ctx.textAlign='center';
-    ctx.fillText('Add drinks to get started', CX, CY+5);
+    ctx.fillStyle='rgba(255,255,255,0.16)'; ctx.font='400 14px Outfit'; ctx.textAlign='center';
+    ctx.fillText('Add drinks above', CX, CY+5);
     return;
   }
-  const slice = TAU / n;
-  for (let i = 0; i < n; i++) {
-    const s = a + i * slice, e = s + slice;
+  const slice = TAU/n;
+  for (let i=0;i<n;i++) {
+    const s=a+i*slice, e=s+slice;
     ctx.beginPath(); ctx.moveTo(CX,CY); ctx.arc(CX,CY,R,s,e); ctx.closePath();
-    ctx.fillStyle = PAL[i % PAL.length]; ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
-
-    const mid = s + slice * 0.5;
-    const tx  = CX + Math.cos(mid) * R * 0.62;
-    const ty  = CY + Math.sin(mid) * R * 0.62;
-    const fs  = Math.max(10, Math.min(15, 14.5 - Math.max(0, n-6) * 0.45));
-    const maxW = slice < 0.55 ? 68 : slice < 1.1 ? 108 : 148;
-
-    ctx.save();
-    ctx.translate(tx, ty);
-    ctx.rotate(mid + Math.PI / 2);
-    ctx.textAlign = 'center';
-    ctx.font = `600 ${fs}px Outfit`;
-
-    let lbl = drinks[i];
-    while (ctx.measureText(lbl).width > maxW && lbl.length > 2) lbl = lbl.slice(0,-1);
-    if (lbl !== drinks[i]) lbl = lbl.slice(0,-1) + '…';
-
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.fillText(lbl, 1, fs*0.36+1);
-    ctx.fillStyle = '#fff';
-    ctx.fillText(lbl, 0, fs*0.36);
+    ctx.fillStyle=PAL[i%PAL.length]; ctx.fill();
+    ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1.5; ctx.stroke();
+    const mid=s+slice*.5, tx=CX+Math.cos(mid)*R*.63, ty=CY+Math.sin(mid)*R*.63;
+    const fs=Math.max(10,Math.min(15,14.5-Math.max(0,n-6)*.5));
+    const mxW=slice<.55?66:slice<1.1?108:148;
+    ctx.save(); ctx.translate(tx,ty); ctx.rotate(mid+Math.PI/2);
+    ctx.textAlign='center'; ctx.font=`600 ${fs}px Outfit`;
+    let lbl=drinks[i];
+    while(ctx.measureText(lbl).width>mxW&&lbl.length>2) lbl=lbl.slice(0,-1);
+    if(lbl!==drinks[i]) lbl=lbl.slice(0,-1)+'…';
+    ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillText(lbl,1,fs*.36+1);
+    ctx.fillStyle='#fff'; ctx.fillText(lbl,0,fs*.36);
     ctx.restore();
   }
-  // hub
-  ctx.beginPath(); ctx.arc(CX,CY,22,0,TAU);
-  ctx.fillStyle='#0c0b09'; ctx.fill();
+  ctx.beginPath(); ctx.arc(CX,CY,22,0,TAU); ctx.fillStyle='#0c0b09'; ctx.fill();
   ctx.strokeStyle='rgba(255,255,255,0.08)'; ctx.lineWidth=1.5; ctx.stroke();
-  ctx.beginPath(); ctx.arc(CX,CY,7,0,TAU);
-  ctx.fillStyle='#e8512a'; ctx.fill();
+  ctx.beginPath(); ctx.arc(CX,CY,7,0,TAU); ctx.fillStyle='#e8512a'; ctx.fill();
 }
 
-// ── Winner ───────────────────────────────
-// Pointer is at canvas angle 0 (3 o'clock, right side).
-// Segment i covers [angle + i*slice, angle + (i+1)*slice].
-// Find i where pointer (0) falls:
-//   offset = (-angle mod TAU + TAU) mod TAU
-//   idx    = floor(offset / slice)
-function winner() {
-  const n = drinks.length;
-  const slice = TAU / n;
-  const offset = ((-angle % TAU) + TAU) % TAU;
-  return Math.floor(offset / slice) % n;
+// ─── winner ─────────────────────────────────────────────
+function winnerIdx() {
+  if (!drinks.length) return -1;
+  const slice = TAU/drinks.length;
+  return Math.floor((((-angle%TAU)+TAU)%TAU)/slice)%drinks.length;
 }
 
-// ── Spin ─────────────────────────────────
-function spin() {
-  if (spinning || drinks.length < 2) return;
-  spinning = true;
-  document.getElementById('spinBtn').disabled = true;
-
-  const rName = document.getElementById('resultName');
-  rName.classList.remove('show');
-
-  const delta   = (5 + Math.random() * 5) * TAU + Math.random() * TAU;
-  const dur     = 3600 + Math.random() * 1400;
-  const start   = angle;
-  let   t0      = null;
-
-  function easeOut(t) { return 1 - (1-t)*(1-t)*(1-t); }
-
-  requestAnimationFrame(function frame(ts) {
-    if (!t0) t0 = ts;
-    const p = Math.min((ts - t0) / dur, 1);
-    angle = start + delta * easeOut(p);
-    draw(angle);
-    if (p < 1) { requestAnimationFrame(frame); return; }
-    angle = ((angle % TAU) + TAU) % TAU;
-    draw(angle);
-    spinning = false;
-    document.getElementById('spinBtn').disabled = false;
-    done();
-  });
-}
-
-function done() {
-  const idx  = winner();
-  const name = drinks[idx];
-
-  spins++;
-  document.getElementById('spinCount').textContent =
-    `${spins} SPIN${spins===1?'':'S'}`;
-
-  document.getElementById('idleMsg').style.display = 'none';
-  const rName = document.getElementById('resultName');
-  rName.style.display = 'block';
-  rName.textContent = name;
-  requestAnimationFrame(() => requestAnimationFrame(() => rName.classList.add('show')));
-
-  history.unshift(name);
-  if (history.length > 5) history.pop();
-  renderHistory();
-}
-
-// ── List ─────────────────────────────────
-function renderList() {
-  const el = document.getElementById('list');
-  if (!drinks.length) {
-    el.innerHTML = '<div class="empty-state">No drinks yet.<br>Add something above.</div>';
-    draw(angle); return;
+// ─── spin physics loop ───────────────────────────────────
+let lastWheelTs = null;
+function spinFrame(ts) {
+  const dt = lastWheelTs ? Math.min((ts-lastWheelTs)/1000,.05) : .016;
+  lastWheelTs = ts;
+  omega *= Math.exp(-lockedFric*dt);
+  if (lockedWob>0 && Math.abs(omega)<5 && drinks.length) {
+    const slice=TAU/drinks.length;
+    const local=((angle%slice)+slice)%slice;
+    const delta=local-slice*.5;
+    omega -= delta*lockedWob*5*Math.max(0,1-Math.abs(omega)/5)*dt;
   }
-  el.innerHTML = drinks.map((d,i) =>
-    `<div class="item">
-       <span class="dot" style="background:${PAL[i%PAL.length]}"></span>
-       <span class="item-name" title="${esc(d)}">${esc(d)}</span>
-       <button class="rm" data-i="${i}">×</button>
-     </div>`
-  ).join('');
-  el.querySelectorAll('.rm').forEach(b => b.addEventListener('click', () => {
-    drinks.splice(+b.dataset.i, 1);
-    renderList();
-  }));
+  angle += omega*dt;
+  if (Math.abs(omega)<.018) {
+    omega=0; draw(angle); spinning=false; spinBtn.disabled=false; onSpinDone(); return;
+  }
+  draw(angle);
+  wheelRafId = requestAnimationFrame(spinFrame);
+}
+
+function startSpinWithOmega(o) {
+  if (spinning) return;
+  spinning=true; spinBtn.disabled=true;
+  resultName.classList.remove('show');
+  omega=o;
+  lockedFric=FRIC.s2p(+fricSlider.value);
+  lockedWob=WOB.s2p(+wobSlider.value);
+  lastWheelTs=null;
+  if (wheelRafId) cancelAnimationFrame(wheelRafId);
+  wheelRafId=requestAnimationFrame(spinFrame);
+}
+
+function onSpinDone() {
+  spins++;
+  document.getElementById('spinCount').textContent=`${spins} SPIN${spins===1?'':'S'}`;
+  const idx=winnerIdx(); if (idx<0) return;
+  const name=drinks[idx];
+  idleMsg.style.display='none'; resultName.style.display='block'; resultName.textContent=name;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>resultName.classList.add('show')));
+  history.unshift(name); if (history.length>6) history.pop(); renderHistory();
+}
+
+// ─── hold-to-spin ────────────────────────────────────────
+function startHold(e) {
+  if (spinning) return;
+  if (e.cancelable) e.preventDefault();
+  holding=true; holdStart=performance.now();
+  clearTimeout(autoTimer); autoTimer=setTimeout(endHold, MAX_HOLD_MS+50);
+  cancelAnimationFrame(holdRafId); holdRafId=requestAnimationFrame(tickHold);
+}
+
+function tickHold(ts) {
+  if (!holding) return;
+  // Cancel if physics drag detected on spin zone
+  if (physicsMode && spinEl && spinEl.isDrag) { cancelHold(); return; }
+  const p=Math.min((ts-holdStart)/MAX_HOLD_MS,1);
+  const col=p<.5?`rgba(232,81,42,${.4+p*1.2})`:p<.85?`rgba(240,${Math.round(140-p*100)},20,1)`:'#ff3030';
+  powerFill.style.width=(p*100)+'%'; powerFill.style.background=col;
+  if (p<.4)      {powerText.textContent='CHARGING…'; powerText.style.color='var(--dim)';}
+  else if(p<.75) {powerText.textContent='BUILDING…'; powerText.style.color='var(--muted)';}
+  else if(p<.95) {powerText.textContent='MAX POWER!';powerText.style.color='var(--acc)';}
+  else           {powerText.textContent='RELEASE!!'; powerText.style.color='#ff3030';}
+  spinWrap.classList.toggle('charging-high', p>=.82);
+  if (p>=1) { endHold(); return; }
+  holdRafId=requestAnimationFrame(tickHold);
+}
+
+function cancelHold() {
+  holding=false; clearTimeout(autoTimer); cancelAnimationFrame(holdRafId);
+  powerFill.style.width='0%'; powerText.textContent='';
+  spinWrap.classList.remove('charging-high'); holdStart=null;
+}
+
+function endHold(e) {
+  if (!holding) return;
+  const p=holdStart?Math.min((performance.now()-holdStart)/MAX_HOLD_MS,1):0;
+  const wasDrag = physicsMode && spinEl && spinEl.isDrag;
+  cancelHold();
+  if (wasDrag || p<.04) return;
+  const force=6+p*64;
+  startSpinWithOmega(force*(0.88+Math.random()*.24));
+}
+
+spinBtn.addEventListener('mousedown', startHold);
+spinBtn.addEventListener('touchstart', startHold, {passive:false});
+window.addEventListener('mouseup', endHold);
+window.addEventListener('touchend', endHold);
+
+// ─── drag-to-spin ────────────────────────────────────────
+function canvasAngle(e) {
+  const rect=canvas.getBoundingClientRect(), sx=canvas.width/rect.width, sy=canvas.height/rect.height;
+  return Math.atan2((e.clientY-rect.top)*sy-CY,(e.clientX-rect.left)*sx-CX);
+}
+
+canvas.addEventListener('mousedown', e => {
+  if (spinning||holding) return;
+  if (physicsMode) { wheelEl&&wheelEl.startGrab(e); return; }
+  wheelDragging=true; canvas.style.cursor='grabbing';
+  dragVelBuf.length=0; lastDragAng=canvasAngle(e); lastDragTime=performance.now();
+  e.preventDefault();
+});
+
+canvas.addEventListener('touchstart', e=>{
+  if (spinning||physicsMode) return;
+  wheelDragging=true; dragVelBuf.length=0;
+  const t=e.touches[0], rect=canvas.getBoundingClientRect();
+  lastDragAng=Math.atan2((t.clientY-rect.top)*(canvas.height/rect.height)-CY,(t.clientX-rect.left)*(canvas.width/rect.width)-CX);
+  lastDragTime=performance.now(); e.preventDefault();
+},{passive:false});
+
+canvas.addEventListener('touchmove', e=>{
+  if (!wheelDragging) return;
+  const t=e.touches[0], now=performance.now(), dt=(now-lastDragTime)/1000; if(dt<.001)return;
+  const rect=canvas.getBoundingClientRect();
+  const a=Math.atan2((t.clientY-rect.top)*(canvas.height/rect.height)-CY,(t.clientX-rect.left)*(canvas.width/rect.width)-CX);
+  let dA=a-lastDragAng; if(dA>Math.PI)dA-=TAU; if(dA<-Math.PI)dA+=TAU;
+  angle+=dA; draw(angle); dragVelBuf.push({dA,dt}); if(dragVelBuf.length>6)dragVelBuf.shift();
+  lastDragAng=a; lastDragTime=now; e.preventDefault();
+},{passive:false});
+
+canvas.addEventListener('touchend', e=>{
+  if (!wheelDragging) return; wheelDragging=false;
+  if (!dragVelBuf.length) return;
+  let sv=0,sw=0; dragVelBuf.forEach((v,i)=>{const w=i+1;sv+=(v.dA/v.dt)*w;sw+=w;});
+  if (Math.abs(sv/sw)>.5) startSpinWithOmega(sv/sw);
+},{passive:false});
+
+// ─── global mouse handling (shared by drag-spin + physics) ──
+const physVelBuf = [];
+let lastPhysPos = null;
+
+window.addEventListener('mousemove', e=>{
+  if (activePhysEl) {
+    activePhysEl.move(e.clientX, e.clientY); return;
+  }
+  if (wheelDragging) {
+    const now=performance.now(), dt=(now-lastDragTime)/1000; if(dt<.001)return;
+    const a=canvasAngle(e);
+    let dA=a-lastDragAng; if(dA>Math.PI)dA-=TAU; if(dA<-Math.PI)dA+=TAU;
+    angle+=dA; draw(angle); dragVelBuf.push({dA,dt}); if(dragVelBuf.length>6)dragVelBuf.shift();
+    lastDragAng=a; lastDragTime=now;
+  }
+});
+
+window.addEventListener('mouseup', e=>{
+  if (activePhysEl) {
+    activePhysEl.release(); return;
+  }
+  if (wheelDragging) {
+    wheelDragging=false; canvas.style.cursor='';
+    if (!dragVelBuf.length) return;
+    let sv=0,sw=0; dragVelBuf.forEach((v,i)=>{const w=i+1;sv+=(v.dA/v.dt)*w;sw+=w;});
+    if (Math.abs(sv/sw)>.5) startSpinWithOmega(sv/sw);
+  }
+});
+
+// touch for physics els
+window.addEventListener('touchmove', e=>{
+  if (activePhysEl) { const t=e.touches[0]; activePhysEl.move(t.clientX,t.clientY); e.preventDefault(); }
+},{passive:false});
+window.addEventListener('touchend', e=>{ if (activePhysEl) activePhysEl.release(); });
+
+// ─── drink list ──────────────────────────────────────────
+function renderList() {
+  const el=document.getElementById('drinkList');
+  if (!drinks.length) { el.innerHTML='<div class="empty-state">No drinks yet.<br>Add something above.</div>'; draw(angle); return; }
+  el.innerHTML=drinks.map((d,i)=>`
+    <div class="item">
+      <span class="dot" style="background:${PAL[i%PAL.length]}"></span>
+      <span class="item-name" title="${esc(d)}">${esc(d)}</span>
+      <button class="rm" data-i="${i}">×</button>
+    </div>`).join('');
+  el.querySelectorAll('.rm').forEach(b=>b.addEventListener('click',()=>{drinks.splice(+b.dataset.i,1);renderList();}));
   draw(angle);
 }
 
 function addDrink() {
-  const inp = document.getElementById('inp');
-  const v = inp.value.trim();
-  if (!v) return;
-  drinks.push(v);
-  inp.value = '';
-  renderList();
+  const inp=document.getElementById('drinkInp'), v=inp.value.trim(); if(!v)return;
+  drinks.push(v); inp.value=''; renderList();
 }
 
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-
-// ── History ───────────────────────────────
 function renderHistory() {
-  const wrap = document.getElementById('histWrap');
-  const list = document.getElementById('histList');
-  if (!history.length) { wrap.style.display='none'; return; }
-  wrap.style.display = 'block';
-  list.innerHTML = history.map((h,i) =>
-    `<div class="hrow${i===0?' top':''}">${esc(h)}</div>`
-  ).join('');
+  const wrap=document.getElementById('histWrap'), list=document.getElementById('histList');
+  if (!history.length){wrap.style.display='none';return;}
+  wrap.style.display='block';
+  list.innerHTML=history.map((h,i)=>`<div class="hrow${i===0?' top':''}">${esc(h)}</div>`).join('');
 }
 
-// ── Events ────────────────────────────────
-document.getElementById('spinBtn').addEventListener('click', spin);
-document.getElementById('addBtn').addEventListener('click', addDrink);
-document.getElementById('inp').addEventListener('keydown', e => { if(e.key==='Enter') addDrink(); });
+// ─── sliders ─────────────────────────────────────────────
+fricSlider.addEventListener('input',()=>document.getElementById('fricVal').textContent=fricSlider.value);
+wobSlider.addEventListener('input',()=>document.getElementById('wobVal').textContent=wobSlider.value);
+document.getElementById('resetPhysBtn').addEventListener('click',()=>{
+  fricSlider.value=40;wobSlider.value=25;
+  document.getElementById('fricVal').textContent=40;
+  document.getElementById('wobVal').textContent=25;
+});
 
-// ── Boot ──────────────────────────────────
+// ─── presets ─────────────────────────────────────────────
+function loadPresets(){try{return JSON.parse(localStorage.getItem(STORE_KEY))||[];}catch{return[];}}
+function savePresets(l){try{localStorage.setItem(STORE_KEY,JSON.stringify(l));}catch{}}
+
+function renderPresets() {
+  const scroll=document.getElementById('presetScroll');
+  const user=loadPresets();
+  let html='';
+  if(user.length){
+    html+='<div class="preset-sect-lbl">Saved</div>';
+    html+=user.map((p,i)=>`<div class="p-item"><div class="p-info"><div class="p-name">${esc(p.name)}</div><div class="p-meta">${p.drinks.length} drinks</div></div><div class="p-acts"><button class="p-load" data-ui="${i}">Load</button><button class="p-del" data-ui="${i}">×</button></div></div>`).join('');
+  }
+  html+='<div class="preset-sect-lbl">Starter presets</div>';
+  html+=BUILTIN.map((p,i)=>`<div class="p-item"><div class="p-info"><div class="p-name">${esc(p.name)}</div><div class="p-meta">${p.drinks.length} drinks · built-in</div></div><div class="p-acts"><button class="p-load bi" data-bi="${i}">Load</button></div></div>`).join('');
+  scroll.innerHTML=html;
+  scroll.querySelectorAll('.p-load:not(.bi)').forEach(b=>b.addEventListener('click',()=>{
+    const pr=loadPresets()[+b.dataset.ui];if(pr){drinks=[...pr.drinks];renderList();}
+  }));
+  scroll.querySelectorAll('.p-load.bi').forEach(b=>b.addEventListener('click',()=>{
+    const pr=BUILTIN[+b.dataset.bi];if(pr){drinks=[...pr.drinks];renderList();}
+  }));
+  scroll.querySelectorAll('.p-del').forEach(b=>b.addEventListener('click',()=>{
+    const l=loadPresets();l.splice(+b.dataset.ui,1);savePresets(l);renderPresets();
+  }));
+}
+
+document.getElementById('savePresetBtn').addEventListener('click',()=>{
+  const name=document.getElementById('presetNameInp').value.trim();
+  if(!name||!drinks.length)return;
+  const l=loadPresets();l.unshift({id:Date.now().toString(36),name,drinks:[...drinks]});
+  savePresets(l);document.getElementById('presetNameInp').value='';renderPresets();
+});
+
+// ─── tabs ────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  const t=btn.dataset.tab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+  document.querySelectorAll('.tab-body').forEach(b=>b.classList.toggle('active',b.id===`tb-${t}`));
+  if(t==='presets')renderPresets();
+}));
+
+// ═══════════════════════════════════════════════════════
+// PHYSICS MODE — transform-based, elements stay functional
+// ═══════════════════════════════════════════════════════
+
+let physicsMode  = false;
+let activePhysEl = null;
+let physRafId    = null;
+let lastPhysTs   = null;
+const physEls    = [];  // active PhysEl instances
+let wheelEl = null, spinEl = null, resultEl = null;
+
+const GRAVITY = 260;  // px/s² — gentle, feels weighty not hyper
+
+class PhysEl {
+  constructor(domEl) {
+    this.el = domEl;
+    // Capture layout position
+    const r = domEl.getBoundingClientRect();
+    this.cx = r.left + r.width  / 2;   // original center x (screen coords)
+    this.cy = r.top  + r.height / 2;   // original center y
+    this.w  = r.width;
+    this.h  = r.height;
+    // Physics state — dx/dy are offsets from the original layout position
+    this.dx = 0; this.dy = 0;
+    this.vx = 0; this.vy = 0;
+    this.angle = 0; this.omega = 0;
+    this.grabbed = false;
+    this.isDrag  = false;
+    this.downX = 0; this.downY = 0;
+    this.grabOffX = 0; this.grabOffY = 0;
+
+    domEl.classList.add('phys-el');
+    domEl.style.position = 'relative';
+    domEl.style.zIndex   = '500';
+    domEl.style.willChange = 'transform';
+  }
+
+  _render() {
+    this.el.style.transform = `translate(${this.dx}px,${this.dy}px) rotate(${this.angle}rad)`;
+  }
+
+  startGrab(e) {
+    const cx = e.clientX ?? e.x, cy = e.clientY ?? e.y;
+    activePhysEl = this;
+    this.grabbed = true;
+    this.isDrag  = false;
+    this.downX   = cx; this.downY = cy;
+    // offset from element center to cursor
+    this.grabOffX = (this.cx + this.dx) - cx;
+    this.grabOffY = (this.cy + this.dy) - cy;
+    this.vx = 0; this.vy = 0; this.omega = 0;
+    physVelBuf.length = 0;
+    lastPhysPos = { x: cx, y: cy, t: performance.now() };
+    this.el.classList.add('phys-dragging');
+    this.el.style.zIndex = '600';
+  }
+
+  move(cx, cy) {
+    const now = performance.now();
+    const dt  = lastPhysPos ? (now - lastPhysPos.t) / 1000 : .016;
+
+    // Commit to drag if moved enough
+    const moved = Math.hypot(cx - this.downX, cy - this.downY);
+    if (moved > 9) this.isDrag = true;
+
+    if (dt > .001 && lastPhysPos) {
+      physVelBuf.push({ vx: (cx - lastPhysPos.x)/dt, vy: (cy - lastPhysPos.y)/dt });
+      if (physVelBuf.length > 6) physVelBuf.shift();
+    }
+    lastPhysPos = { x: cx, y: cy, t: now };
+
+    // Move element so its center follows cursor + offset
+    const newCX = cx + this.grabOffX;
+    const newCY = cy + this.grabOffY;
+    this.dx = newCX - this.cx;
+    this.dy = newCY - this.cy;
+    this._render();
+  }
+
+  release() {
+    this.grabbed = false;
+    activePhysEl = null;
+    this.el.classList.remove('phys-dragging');
+    this.el.style.zIndex = '500';
+
+    if (this.isDrag && physVelBuf.length) {
+      let vx=0, vy=0, sw=0;
+      physVelBuf.forEach((v,i)=>{ const w=i+1; vx+=v.vx*w; vy+=v.vy*w; sw+=w; });
+      vx/=sw; vy/=sw;
+      const cap=1600;
+      this.vx = Math.max(-cap,Math.min(cap,vx));
+      this.vy = Math.max(-cap,Math.min(cap,vy));
+      const spd = Math.hypot(this.vx,this.vy);
+      this.omega = spd > 80 ? Math.sign(this.vx) * spd / 280 : 0;
+    }
+    // If click (not drag): zero velocity — gravity takes over from current position
+  }
+
+  update(dt) {
+    if (this.grabbed) return;
+    this.vy += GRAVITY * dt;
+    this.vx *= Math.pow(.991, dt*60);
+    this.dx += this.vx * dt;
+    this.dy += this.vy * dt;
+    this.angle += this.omega * dt;
+    this.omega *= Math.pow(.982, dt*60);
+
+    // Wall/floor/ceiling (current screen-space center)
+    const cx = this.cx + this.dx, cy = this.cy + this.dy;
+    const hw = this.w/2, hh = this.h/2;
+    const W = window.innerWidth, H = window.innerHeight;
+
+    if (cx-hw < 0)   { this.dx=hw-this.cx;     this.vx= Math.abs(this.vx)*.58; this.omega*=-.45; }
+    if (cx+hw > W)   { this.dx=W-hw-this.cx;   this.vx=-Math.abs(this.vx)*.58; this.omega*=-.45; }
+    if (cy-hh < 0)   { this.dy=hh-this.cy;     this.vy= Math.abs(this.vy)*.55; }
+    if (cy+hh > H)   {
+      this.dy=H-hh-this.cy; this.vy=-Math.abs(this.vy)*.55;
+      this.vx*=.86; this.omega*=.72;
+      if (Math.abs(this.vy)<16) this.vy=0;
+    }
+    this._render();
+  }
+
+  restore() {
+    this.el.style.transform  = '';
+    this.el.style.position   = '';
+    this.el.style.zIndex     = '';
+    this.el.style.willChange = '';
+    this.el.classList.remove('phys-el','phys-dragging');
+  }
+}
+
+// resolve AABB collision between two PhysEls
+function resolveCollision(a, b) {
+  if (a.grabbed||b.grabbed) return;
+  const acx=a.cx+a.dx, acy=a.cy+a.dy;
+  const bcx=b.cx+b.dx, bcy=b.cy+b.dy;
+  const ox=a.w/2+b.w/2-Math.abs(bcx-acx);
+  const oy=a.h/2+b.h/2-Math.abs(bcy-acy);
+  if (ox<=0||oy<=0) return;
+
+  if (ox<oy) {
+    const sgn=bcx>acx?1:-1;
+    a.dx-=sgn*ox*.5; b.dx+=sgn*ox*.5;
+    const rv=(b.vx-a.vx)*sgn;
+    if (rv<0){ const imp=rv*.65; a.vx+=sgn*imp*.5; b.vx-=sgn*imp*.5; }
+  } else {
+    const sgn=bcy>acy?1:-1;
+    a.dy-=sgn*oy*.5; b.dy+=sgn*oy*.5;
+    const rv=(b.vy-a.vy)*sgn;
+    if (rv<0){ const imp=rv*.65; a.vy+=sgn*imp*.5; b.vy-=sgn*imp*.5; }
+  }
+  a._render(); b._render();
+}
+
+function physicsLoop(ts) {
+  const dt = lastPhysTs ? Math.min((ts-lastPhysTs)/1000,.05) : .016;
+  lastPhysTs = ts;
+  physEls.forEach(el=>el.update(dt));
+  for(let i=0;i<physEls.length;i++)
+    for(let j=i+1;j<physEls.length;j++)
+      resolveCollision(physEls[i],physEls[j]);
+  if (physicsMode) physRafId=requestAnimationFrame(physicsLoop);
+}
+
+function activatePhysics() {
+  physicsMode = true;
+  document.getElementById('physBadge').classList.add('on');
+  canvas.style.cursor = 'grab';
+
+  // Create physics elements for wheel, spin zone, and result strip
+  wheelEl  = new PhysEl(document.getElementById('wheelZone'));
+  spinEl   = new PhysEl(document.getElementById('spinZone'));
+  resultEl = new PhysEl(document.getElementById('resultStrip'));
+
+  physEls.push(wheelEl, spinEl, resultEl);
+
+  // Spin zone: intercept mousedown in capture phase before spinBtn's startHold
+  document.getElementById('spinZone').addEventListener('mousedown', physSpinDown, true);
+  document.getElementById('spinZone').addEventListener('touchstart', physSpinTouch, {capture:true, passive:false});
+
+  lastPhysTs = null;
+  physRafId = requestAnimationFrame(physicsLoop);
+}
+
+function physSpinDown(e) {
+  if (!physicsMode) return;
+  spinEl.startGrab(e);
+  // Let event continue to spinBtn → startHold runs in parallel
+  // tickHold will cancel itself if spinEl.isDrag becomes true
+}
+
+function physSpinTouch(e) {
+  if (!physicsMode) return;
+  spinEl.startGrab(e.touches[0]);
+}
+
+function exitPhysics() {
+  physicsMode = false;
+  if (physRafId) cancelAnimationFrame(physRafId);
+  activePhysEl = null;
+  physEls.forEach(el=>el.restore());
+  physEls.length=0;
+  wheelEl=spinEl=resultEl=null;
+  canvas.style.cursor='';
+  document.getElementById('physBadge').classList.remove('on');
+  document.getElementById('spinZone').removeEventListener('mousedown', physSpinDown, true);
+  document.getElementById('spinZone').removeEventListener('touchstart', physSpinTouch, {capture:true});
+  lastPhysTs=null;
+  cancelHold();
+}
+
+// ─── logo 5-click toggle ─────────────────────────────────
+let logoN=0, logoTimer=null;
+document.getElementById('logo').addEventListener('click',()=>{
+  logoN++;
+  clearTimeout(logoTimer);
+  logoTimer=setTimeout(()=>logoN=0, 2500);
+  if (logoN>=5) { logoN=0; physicsMode?exitPhysics():activatePhysics(); }
+});
+
+// ─── utility ─────────────────────────────────────────────
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ─── init ────────────────────────────────────────────────
+document.getElementById('addBtn').addEventListener('click',addDrink);
+document.getElementById('drinkInp').addEventListener('keydown',e=>{if(e.key==='Enter')addDrink();});
 renderList();
+renderPresets();
 </script>
 </body>
 </html>
